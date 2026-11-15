@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TOURNIXO Tournament</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* TOURNIXO Tournament System v3 — User Panel, single file
+     Design: pure black, one lime accent, flat surfaces, Bengali UI. */
+  :root {
+    --bg: #000000;
+    --card: #0b0b0b;
+    --card2: #101010;
+    --track: #1a1a1a;
+    --border: #232323;
+    --border-strong: #2e2e2e;
+    --lime: #c7ff3e;
+    --red: #ff453a;
+    --text: #f2f2f2;
+    --muted: #8a8a8a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--bg); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  button { font-family: inherit; }
+  input, select, textarea { color-scheme: dark; }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 12px;
+  }
+  .header-inner { max-width: 560px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .logo { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: var(--lime); letter-spacing: 1px; line-height: 1; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 2px; }
+  .header-spacer { flex: 1; }
+  .avatar-btn {
+    width: 44px; height: 44px; border-radius: 10px; background: var(--lime); color: #000;
+    border: none; cursor: pointer; font-family: 'Rajdhani', sans-serif;
+    font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .avatar-btn:active { opacity: .85; }
+
+  /* ── Views ── */
+  .view { display: none; max-width: 560px; margin: 0 auto; padding: 16px 16px 8px; }
+  .view.active { display: block; }
+  .view-title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .view-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .card-title::before { content: ""; width: 8px; height: 8px; background: var(--lime); flex-shrink: 0; }
+  .card-title.lime { color: var(--lime); }
+  .fine-print { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; letter-spacing: .5px; min-height: 48px;
+    transition: opacity .15s ease, background-color .15s ease;
+  }
+  .btn-primary { background: var(--lime); color: #000; }
+  .btn-primary:active { opacity: .85; }
+  .btn-primary:disabled { background: var(--track); color: var(--muted); cursor: not-allowed; }
+  .btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-secondary:active { border-color: var(--lime); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-ghost { background: none; color: var(--muted); border: none; font-size: 14px; padding: 10px; cursor: pointer; min-height: 44px; }
+  .btn:focus-visible, .form-input:focus-visible, .avatar-btn:focus-visible, .nav-btn:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .form-input {
+    width: 100%; background: #0e0e0e; border: 1px solid var(--border-strong);
+    border-radius: 8px; color: var(--text); font-size: 15px; padding: 12px 14px;
+    outline: none; font-family: 'Inter', sans-serif; min-height: 48px;
+    transition: border-color .15s ease;
+  }
+  .form-input:focus { border-color: var(--lime); }
+  .form-input::placeholder { color: var(--muted); }
+
+  /* ── Alerts / toast ── */
+  .alert { padding: 14px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 14px; display: none; border: 1px solid var(--border-strong); background: var(--card2); color: var(--text); line-height: 1.6; }
+  .alert.show { display: block; }
+  .alert-success { border-color: var(--lime); color: var(--lime); }
+  .alert-error { border-color: var(--red); color: var(--red); }
+  .alert-info { border-color: var(--border-strong); color: var(--muted); }
+  #toast {
+    position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(16px); z-index: 300;
+    background: var(--card2); border: 1px solid var(--lime); color: var(--text);
+    font-size: 13px; padding: 12px 16px; border-radius: 100px; max-width: calc(100vw - 32px);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Tournament cards ── */
+  .tour-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; cursor: pointer; }
+  .tour-card:active { border-color: var(--border-strong); }
+  .tour-body { padding: 16px; }
+  .tour-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .tour-name { font-family: 'Rajdhani', sans-serif; font-size: 19px; font-weight: 700; line-height: 1.25; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 100px;
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: .5px; white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-open { background: var(--lime); color: #000; }
+  .badge-full { background: var(--track); color: var(--red); border: 1px solid var(--red); }
+  .badge-closed { background: var(--track); color: var(--muted); border: 1px solid var(--border-strong); }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .info-item { background: var(--card2); border-radius: 8px; padding: 10px 12px; }
+  .info-label { font-size: 11px; color: var(--muted); }
+  .info-value { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .info-value.prize { color: var(--lime); }
+  .slot-bar-wrap { margin: 14px 0 4px; }
+  .slot-bar-track { background: var(--track); border-radius: 100px; height: 8px; overflow: hidden; }
+  .slot-bar-fill { height: 100%; border-radius: 100px; background: var(--lime); transition: width .3s ease; }
+  .slot-text { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .slot-text strong { color: var(--lime); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .details-text { white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
+
+  /* ── Slot badge / room ── */
+  .slot-badge {
+    display: inline-block; background: var(--lime); color: #000;
+    font-family: 'Rajdhani', sans-serif; font-size: 40px; font-weight: 700;
+    padding: 16px 36px; border-radius: 12px; letter-spacing: 2px; margin: 12px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .room-box { background: var(--card2); border: 1px solid var(--lime); border-radius: 10px; padding: 20px; text-align: center; }
+  .room-field { margin: 12px 0; }
+  .room-field-label { font-size: 11px; color: var(--muted); }
+  .room-field-value { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: var(--lime); letter-spacing: 2px; word-break: break-all; }
+  .copy-btn {
+    background: var(--card); border: 1px solid var(--border-strong); color: var(--muted);
+    padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; margin-top: 6px; min-height: 36px;
+  }
+  .copy-btn:active { border-color: var(--lime); color: var(--lime); }
+  /* v3.4 — password খালি থাকলে Copy বোতাম disabled দেখাবে (14g)। */
+  .copy-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── Lists ── */
+  .row-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px 4px;
+    border-bottom: 1px solid var(--border); min-height: 56px;
+  }
+  .row-item:last-child { border-bottom: none; }
+  .row-item.tap { cursor: pointer; }
+  .row-item.tap:active { opacity: .7; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title { font-weight: 600; font-size: 14px; word-break: break-word; }
+  .row-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .row-meta { font-size: 11px; color: var(--muted); white-space: nowrap; text-align: right; }
+  .slot-chip {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; color: var(--lime);
+    background: var(--card2); border: 1px solid var(--border-strong); border-radius: 8px;
+    padding: 6px 10px; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .empty-state { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+  .skel { background: var(--track); border-radius: 8px; margin-bottom: 12px; }
+  .skel-card { height: 148px; border-radius: 12px; }
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid var(--track); border-top-color: var(--lime);
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 560px; z-index: 100;
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+  }
+  .nav-btn {
+    flex: 1; background: none; border: none; cursor: pointer; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 6px 4px; min-height: 52px;
+  }
+  .nav-btn svg { width: 22px; height: 22px; }
+  .nav-btn.active { color: var(--lime); }
+
+  @media (max-width: 360px) {
+    .info-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <div class="logo">TOURNIXO</div>
+      <div class="logo-sub">TOURNAMENT SYSTEM v3</div>
+    </div>
+    <div class="header-spacer"></div>
+    <button class="avatar-btn" id="btn-profile" aria-label="Profile">T</button>
+  </div>
+</div>
+
+<!-- ══ TOURNAMENT LIST ══ -->
+<div class="view active" id="view-tournaments">
+  <div class="view-title">Tournaments</div>
+  <div class="view-sub">Free Fire tournament — SQUAD format, live slots</div>
+  <div id="tour-loading">
+    <div class="skel skel-card"></div>
+    <div class="skel" style="height:96px;"></div>
+    <div class="skel" style="height:96px;"></div>
+  </div>
+  <div id="tour-error" class="alert alert-error"></div>
+  <div id="tour-list"></div>
+  <div id="tour-empty" class="empty-state" style="display:none;">কোনো tournament পাওয়া যায়নি।<br>পরে আবার দেখো।</div>
+</div>
+
+<!-- ══ TOURNAMENT DETAILS ══ -->
+<div class="view" id="view-details">
+  <button class="btn-ghost" id="det-back">‹ Back</button>
+  <div id="det-loading" class="empty-state"><span class="spinner"></span>Loading</div>
+  <div id="det-content" style="display:none;">
+    <div class="card">
+      <div class="tour-top">
+        <div><div class="tour-name" id="det-title">Tournament</div></div>
+        <span class="badge badge-open" id="det-badge">OPEN</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-label">Match Date</div><div class="info-value" id="det-date">-</div></div>
+        <div class="info-item"><div class="info-label">Match Time</div><div class="info-value" id="det-time">-</div></div>
+        <div class="info-item"><div class="info-label">Format</div><div class="info-value">SQUAD</div></div>
+        <div class="info-item"><div class="info-label">Map</div><div class="info-value" id="det-map">-</div></div>
+        <div class="info-item"><div class="info-label">Entry Fee</div><div class="info-value" id="det-fee">-</div></div>
+        <div class="info-item"><div class="info-label">Prize Pool</div><div class="info-value prize" id="det-prize">-</div></div>
+      </div>
+      <div class="slot-bar-wrap">
+        <div class="slot-bar-track"><div class="slot-bar-fill" id="det-slot-fill" style="width:0%"></div></div>
+        <div class="slot-text"><span id="det-slots-text">Slots: 0 / 0</span><span id="det-left-text">বাকি: 0</span></div>
+      </div>
+    </div>
+    <div class="card" id="det-details-card">
+      <div class="card-title">Details</div>
+      <div class="details-text" id="det-details-text"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Slot List</div>
+      <p class="fine-print" id="det-slot-counts" style="margin-bottom:10px;"></p>
+      <div id="det-slot-loading" class="empty-state" style="padding:12px;"><span class="spinner"></span>Loading</div>
+      <div id="det-slot-list"></div>
+      <div id="det-slot-empty" class="empty-state" style="display:none; padding:12px;"></div>
+    </div>
+    <button class="btn btn-primary" id="det-register-btn">Register করো</button>
+  </div>
+</div>
+
+<!-- ══ REGISTRATION ══ -->
+<div class="view" id="view-register">
+  <button class="btn-ghost" id="reg-back">‹ Back</button>
+  <div id="reg-login-prompt" class="card" style="display:none; text-align:center;">
+    <div class="card-title" style="justify-content:center;">Login দরকার</div>
+    <p class="fine-print" style="margin-bottom:14px;">Register করতে আগে login করো।</p>
+    <button class="btn btn-primary" id="reg-login-btn">Login করো</button>
+  </div>
+  <div class="card" id="reg-form-wrap">
+    <div class="card-title"><span id="reg-form-title">Registration — SQUAD</span></div>
+    <div id="reg-tour-line" class="fine-print" style="margin-bottom:14px;"></div>
+    <div class="form-group">
+      <label class="form-label">Team Name</label>
+      <input class="form-input" id="reg-team" placeholder="Team-এর নাম লেখো" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Captain IGN</label>
+      <input class="form-input" id="reg-ign" placeholder="Captain-এর In-Game Name" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Captain FF UID</label>
+      <input class="form-input" id="reg-uid" placeholder="Captain-এর Free Fire UID" inputmode="numeric" autocomplete="off">
+    </div>
+    <p class="fine-print" style="margin-bottom:14px;">একটা account দিয়ে একটা team-ই register করা যায়, আর একটা UID দিয়ে একবারই।</p>
+    <div id="reg-alert" class="alert"></div>
+    <button class="btn btn-primary" id="reg-btn">Register করো</button>
+  </div>
+</div>
+
+<!-- ══ REGISTRATION SUCCESS ══ -->
+<div class="view" id="view-success">
+  <div class="card" style="text-align:center; border-color: var(--lime);">
+    <div class="card-title lime" style="justify-content:center;">Registration সফল</div>
+    <p class="fine-print" id="success-team-line"></p>
+    <p class="fine-print" style="margin-top:8px;">তোমার Slot নম্বর</p>
+    <div class="slot-badge" id="success-slot"></div>
+    <p class="fine-print" id="success-meta"></p>
+    <p class="fine-print" style="margin-top:8px;">Registration ID: <span id="success-reg-id" style="color:var(--text); word-break:break-all;"></span></p>
+    <button class="btn btn-primary" style="margin-top:16px;" id="success-my-btn">My Registrations দেখো</button>
+    <button class="btn btn-secondary" style="margin-top:8px;" id="success-tour-btn">Tournament List</button>
+  </div>
+</div>
+
+<!-- ══ MY REGISTRATIONS ══ -->
+<div class="view" id="view-myregs">
+  <div class="view-title">My Registrations</div>
+  <div class="view-sub">তুমি যেসব tournament-এ register করেছো</div>
+  <div id="my-login-prompt" class="card" style="display:none; text-align:center;">
+    <div class="card-title" style="justify-content:center;">Login দরকার</div>
+    <p class="fine-print" style="margin-bottom:14px;">My Registrations দেখতে আগে login করো।</p>
+    <button class="btn btn-primary" id="my-login-btn">Login করো</button>
+  </div>
+  <div id="my-loading" class="empty-state"><span class="spinner"></span>Loading</div>
+  <div id="my-error" class="alert alert-error"></div>
+  <div id="my-list"></div>
+  <div id="my-empty" class="empty-state" style="display:none;">তুমি এখনো কোনো tournament-এ register করোনি।<br>Tournament list থেকে প্রথম tournament-এ join করো।</div>
+  <p class="fine-print" style="margin-top:8px;">Registration-এর তথ্য বদলাতে চাইলে admin-এর সাথে যোগাযোগ করো।</p>
+</div>
+
+<!-- ══ ROOM ══ -->
+<div class="view" id="view-room">
+  <div class="view-title">Room</div>
+  <div class="view-sub">শুধু registered player-রা নিজের room দেখতে পাবে</div>
+  <div id="room-login-prompt" class="card" style="display:none; text-align:center;">
+    <div class="card-title" style="justify-content:center;">Login দরকার</div>
+    <p class="fine-print" style="margin-bottom:14px;">Room দেখতে আগে login করো।</p>
+    <button class="btn btn-primary" id="room-login-btn">Login করো</button>
+  </div>
+  <div id="room-loading" class="empty-state"><span class="spinner"></span>Loading</div>
+  <div id="room-error" class="alert alert-error"></div>
+  <div id="room-list"></div>
+  <div id="room-empty" class="empty-state" style="display:none;">তুমি এখনো কোনো tournament-এ register করোনি।<br>আগে register করো, তারপর Room দেখতে পাবে।</div>
+</div>
+
+<!-- ══ ROOM DETAILS ══ -->
+<div class="view" id="view-room-details">
+  <button class="btn-ghost" id="roomd-back">‹ Back</button>
+  <div id="roomd-loading" class="empty-state"><span class="spinner"></span>Loading</div>
+  <div class="view-title" id="roomd-title" style="display:none;"></div>
+  <div id="roomd-result"></div>
+</div>
+
+<!-- ══ AUTH ══ -->
+<div class="view" id="view-auth">
+  <div class="card" id="auth-login-box">
+    <div class="card-title">Login</div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="login-email" type="email" placeholder="তোমার email" autocomplete="email"></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="login-pass" type="password" placeholder="Password" autocomplete="current-password"></div>
+    <div id="login-alert" class="alert"></div>
+    <button class="btn btn-primary" id="login-btn">Login</button>
+    <div class="divider"></div>
+    <p class="fine-print" style="text-align:center; margin-bottom:12px;">Account নেই?</p>
+    <button class="btn btn-secondary" id="to-register-btn">নতুন Account বানাও</button>
+  </div>
+  <div class="card" id="auth-register-box" style="display:none;">
+    <div class="card-title">নতুন Account</div>
+    <div class="form-group"><label class="form-label">Player Name</label><input class="form-input" id="auth-reg-name" placeholder="তোমার নাম"></div>
+    <div class="form-group"><label class="form-label">In-Game Name</label><input class="form-input" id="auth-reg-ign" placeholder="FF IGN"></div>
+    <div class="form-group"><label class="form-label">Free Fire UID</label><input class="form-input" id="auth-reg-ffuid" placeholder="FF UID" inputmode="numeric"></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="auth-reg-email" type="email" placeholder="তোমার email" autocomplete="email"></div>
+    <div class="form-group"><label class="form-label">Password (কমপক্ষে ৬ অক্ষর)</label><input class="form-input" id="auth-reg-pass" type="password" placeholder="Password" autocomplete="new-password"></div>
+    <div id="register-alert" class="alert"></div>
+    <button class="btn btn-primary" id="register-btn">Account বানাও</button>
+    <button class="btn-ghost" id="to-login-btn" style="width:100%;">আগে থেকেই account আছে? Login করো</button>
+  </div>
+</div>
+
+<!-- ══ PROFILE ══ -->
+<div class="view" id="view-profile">
+  <div class="view-title">Profile</div>
+  <div id="profile-login-prompt" class="card" style="display:none; text-align:center;">
+    <div class="card-title" style="justify-content:center;">Login দরকার</div>
+    <p class="fine-print" style="margin-bottom:14px;">Profile দেখতে আগে login করো।</p>
+    <button class="btn btn-primary" id="profile-login-btn">Login করো</button>
+  </div>
+  <div id="profile-content" style="display:none;">
+    <div class="card">
+      <div class="card-title">Account</div>
+      <p class="fine-print" style="margin-bottom:4px;">Email</p>
+      <p style="font-size:14px; word-break:break-all; margin-bottom:14px;" id="profile-email-text"></p>
+      <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="profile-name" placeholder="তোমার নাম"></div>
+      <div class="form-group"><label class="form-label">In-Game Name</label><input class="form-input" id="profile-ign" placeholder="FF IGN"></div>
+      <div class="form-group"><label class="form-label">Free Fire UID</label><input class="form-input" id="profile-ffuid" placeholder="FF UID" inputmode="numeric"></div>
+      <div id="profile-alert" class="alert"></div>
+      <button class="btn btn-primary" id="profile-save-btn">Profile Save করো</button>
+      <button class="btn btn-secondary" id="profile-logout-btn" style="margin-top:8px;">Logout</button>
+    </div>
+    <p class="fine-print" style="text-align:center;">TOURNIXO Tournament System v3 • SQUAD only</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-tournaments" data-view="tournaments">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    Tournaments
+  </button>
+  <button class="nav-btn" id="nav-myregs" data-view="myregs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    My Registrations
+  </button>
+  <button class="nav-btn" id="nav-room" data-view="room">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+    Room
+  </button>
+  <button class="nav-btn" id="nav-profile" data-view="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile
+  </button>
+</nav>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, serverTimestamp, runTransaction, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// ── Firebase Config — free-fire-india-7ed8e (scrims base file থেকে হুবহু) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCtCqMeb0522yjGLf_MHf-t_J0Fp06LTJE",
+  authDomain: "free-fire-india-7ed8e.firebaseapp.com",
+  projectId: "free-fire-india-7ed8e",
+  storageBucket: "free-fire-india-7ed8e.firebasestorage.app",
+  messagingSenderId: "250834228036",
+  appId: "1:250834228036:web:1851a6b63e15e8fb8a3d11",
+  measurementId: "G-7X8WQJ0P2H"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ── State ──
+const state = {
+  user: null,
+  profile: null,
+  tournaments: [],
+  myRegs: [],
+  manualRegs: [], // v3.4 — admin-এর manual-add করা registration (Room-এর জন্য, 2c)।
+  view: 'tournaments',
+  currentTid: null,
+  roomTid: null,
+  tourLoading: true,
+  myLoading: true,
+  roomLoading: true
+};
+let unsubTournaments = null;
+let unsubMyRegs = null;
+let unsubRoomReg = null; // v3.4 — Room দেখার সময় নিজের registration-এর live watch (14h)।
+
+// ── Helpers ──
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function slotLabel(n) { return 'S-' + String(n).padStart(2, '0'); }
+function fmt12h(t) {
+  if (!t) return '-';
+  const [h, m] = t.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return t;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+}
+function $(id) { return document.getElementById(id); }
+function showAlert(id, msg, type) { const el = $(id); if (!el) return; el.className = 'alert alert-' + type + ' show'; el.textContent = msg; }
+function hideAlert(id) { const el = $(id); if (!el) return; el.className = 'alert'; el.textContent = ''; }
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+function friendlyError(e) {
+  const c = e && e.code ? String(e.code) : '';
+  if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found') return 'Email বা password ভুল।';
+  if (c === 'auth/email-already-in-use') return 'এই email দিয়ে account আছে — Login দিয়ে ঢোকো।';
+  if (c === 'auth/weak-password') return 'Password কমপক্ষে ৬ অক্ষর হবে।';
+  if (c === 'auth/invalid-email') return 'সঠিক email লেখো।';
+  if (c === 'auth/requires-recent-login') return 'আবার login করে চেষ্টা করো।';
+  if (c === 'auth/operation-not-allowed') return 'এই প্রজেক্টে Email/Password login এখনো on করা হয়নি। Firebase Console থেকে on করো।';
+  // v3.4 — admin panel-এর mapping-গুলো এখানেও আনো (10): index না থাকলে আসল error-এর
+  // লিংকসহ দেখাও, transient error-এ আবার চেষ্টা করতে বলো।
+  if (c === 'auth/too-many-requests') return 'অনেকবার ভুল চেষ্টা হয়েছে — কিছুক্ষণ পরে আবার চেষ্টা করো।';
+  if (c === 'auth/user-disabled') return 'এই account বন্ধ করা আছে।';
+  if (c === 'auth/network-request-failed') return 'ইন্টারনেট সংযোগ নেই — নেট চেক করে আবার চেষ্টা করো।';
+  if (c === 'failed-precondition' || /failed-precondition/i.test((e && e.message) || '')) return 'Firestore index লাগবে — Firebase Console-এ index বানাও। ' + ((e && e.message) || '');
+  if (c === 'unavailable' || c === 'aborted') return 'সংযোগে সমস্যা হয়েছে — একটু পরে আবার চেষ্টা করো।';
+  if (c === 'permission-denied' || /permission-denied/i.test((e && e.message) || '')) return 'অনুমতি নেই — Rules publish করা আছে কিনা দেখো।';
+  return (e && (e.message || e.code)) ? String(e.message || e.code) : 'অজানা সমস্যা হয়েছে।';
+}
+function tourById(tid) { return state.tournaments.find(t => t.id === tid) || null; }
+function tourTitle(tid) { const t = tourById(tid); return t ? (t.title || 'Tournament') : 'Tournament'; }
+
+// Status badge: OPEN শুধু যখন registration খোলা + tournament active + slot বাকি আছে
+function statusOf(t) {
+  const filled = t.filledSlots || 0, total = t.totalSlots || 0;
+  if (total > 0 && filled >= total) return { label: 'FULL', cls: 'badge-full' };
+  if (t.registrationStatus !== 'open' || t.tournamentStatus !== 'active') return { label: 'CLOSED', cls: 'badge-closed' };
+  return { label: 'OPEN', cls: 'badge-open' };
+}
+
+// ── Navigation ──
+const VIEW_IDS = { tournaments: 'view-tournaments', details: 'view-details', register: 'view-register', success: 'view-success', myregs: 'view-myregs', room: 'view-room', roomdetails: 'view-room-details', auth: 'view-auth', profile: 'view-profile' };
+function showView(name) {
+  // v3.4 — room-details ছেড়ে গেলে registration watch বন্ধ করো (14h)।
+  if (name !== 'roomdetails' && unsubRoomReg) { unsubRoomReg(); unsubRoomReg = null; }
+  state.view = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = $(VIEW_IDS[name]);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  window.scrollTo({ top: 0 });
+  if (name === 'myregs') renderMyRegs();
+  if (name === 'room') renderRoomList();
+  if (name === 'profile') renderProfile();
+  if (name === 'register') renderRegisterPrompt();
+}
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+$('btn-profile').addEventListener('click', () => showView(state.user ? 'profile' : 'auth'));
+$('my-login-btn').addEventListener('click', () => showView('auth'));
+$('room-login-btn').addEventListener('click', () => showView('auth'));
+$('profile-login-btn').addEventListener('click', () => showView('auth'));
+$('reg-login-btn').addEventListener('click', () => showView('auth'));
+$('det-back').addEventListener('click', () => showView('tournaments'));
+$('reg-back').addEventListener('click', () => showView('details'));
+$('roomd-back').addEventListener('click', () => showView('room'));
+
+// Copy buttons — delegated, data-copy attribute থেকে (Room ID / Password আলাদা)
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  const val = btn.dataset.copy || '';
+  const done = () => {
+    const old = btn.textContent;
+    btn.textContent = 'Copy হয়েছে';
+    toast('Copy হয়েছে');
+    setTimeout(() => { btn.textContent = old; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(done).catch(() => { toast('Copy হয়নি — নিজে লিখে নাও'); });
+  } else {
+    toast('Copy হয়নি — নিজে লিখে নাও');
+  }
+});
+
+// ── Tournament list ──
+function tourCardHtml(t) {
+  const st = statusOf(t);
+  const filled = t.filledSlots || 0, total = t.totalSlots || 0;
+  const left = Math.max(0, total - filled);
+  const pct = total > 0 ? Math.min(100, (filled / total) * 100) : 0;
+  return '<div class="tour-card" data-tid="' + esc(t.id) + '">'
+    + '<div class="tour-body"><div class="tour-top"><div><div class="tour-name">' + esc(t.title || 'Tournament') + '</div></div>'
+    + '<span class="badge ' + st.cls + '">' + st.label + '</span></div>'
+    + '<div class="info-grid">'
+    + '<div class="info-item"><div class="info-label">Match Date</div><div class="info-value">' + esc(t.matchDate || '-') + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Match Time</div><div class="info-value">' + esc(fmt12h(t.matchTime)) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Format</div><div class="info-value">SQUAD</div></div>'
+    + '<div class="info-item"><div class="info-label">Map</div><div class="info-value">' + esc(t.map || '-') + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Entry Fee</div><div class="info-value">' + esc(t.entryFee || '-') + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Prize Pool</div><div class="info-value prize">' + esc(t.prizePool || '-') + '</div></div>'
+    + '</div>'
+    + '<div class="slot-bar-wrap"><div class="slot-bar-track"><div class="slot-bar-fill" style="width:' + pct + '%"></div></div>'
+    + '<div class="slot-text"><span>Slots: <strong>' + filled + ' / ' + total + '</strong></span><span>বাকি: <strong>' + left + '</strong></span></div></div>'
+    + '<button class="btn btn-secondary" style="margin-top:14px;">View Details</button>'
+    + '</div></div>';
+}
+function renderTournaments() {
+  // archived আর completed tournaments লুকানো থাকে (client filter) —
+  // completed tournament-এর registration My Registrations-এ ঠিকই দেখা যায়।
+  const list = state.tournaments.filter(t => t.tournamentStatus !== 'archived' && t.tournamentStatus !== 'completed');
+  $('tour-loading').style.display = state.tourLoading ? 'block' : 'none';
+  $('tour-list').innerHTML = list.map(tourCardHtml).join('');
+  $('tour-empty').style.display = (!state.tourLoading && list.length === 0) ? 'block' : 'none';
+}
+$('tour-list').addEventListener('click', e => {
+  const card = e.target.closest('[data-tid]');
+  if (!card) return;
+  openDetails(card.dataset.tid);
+});
+function subscribeTournaments() {
+  if (unsubTournaments) unsubTournaments();
+  const q = query(collection(db, 'tournaments'), orderBy('createdAt', 'desc'));
+  unsubTournaments = onSnapshot(q, snap => {
+    state.tournaments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    state.tourLoading = false;
+    hideAlert('tour-error');
+    renderTournaments();
+    if (state.view === 'details' && state.currentTid) renderDetailsFields();
+    if (state.view === 'myregs') renderMyRegs();
+    if (state.view === 'room') renderRoomList();
+  }, e => {
+    state.tourLoading = false;
+    showAlert('tour-error', 'Tournament load হয়নি: ' + friendlyError(e), 'error');
+    renderTournaments();
+  });
+}
+
+// ── Tournament details ──
+function openDetails(tid) {
+  state.currentTid = tid;
+  $('det-loading').style.display = 'block';
+  $('det-content').style.display = 'none';
+  showView('details');
+  renderDetailsFields();
+  loadPublicSlots(tid);
+}
+// শুধু field গুলো ভরে — slot list আলাদা করে load হয়
+function renderDetailsFields() {
+  const t = tourById(state.currentTid);
+  $('det-loading').style.display = 'none';
+  if (!t) {
+    $('det-content').style.display = 'block';
+    $('det-title').textContent = 'Tournament পাওয়া যায়নি।';
+    $('det-badge').textContent = 'CLOSED';
+    $('det-badge').className = 'badge badge-closed';
+    $('det-date').textContent = '-';
+    $('det-time').textContent = '-';
+    $('det-map').textContent = '-';
+    $('det-fee').textContent = '-';
+    $('det-prize').textContent = '-';
+    $('det-slots-text').textContent = 'Slots: 0 / 0';
+    $('det-left-text').textContent = 'বাকি: 0';
+    $('det-slot-fill').style.width = '0%';
+    $('det-details-text').textContent = '';
+    $('det-details-card').style.display = 'none';
+    $('det-slot-counts').textContent = '';
+    $('det-register-btn').disabled = true;
+    return;
+  }
+  const st = statusOf(t);
+  const filled = t.filledSlots || 0, total = t.totalSlots || 0;
+  const left = Math.max(0, total - filled);
+  const pct = total > 0 ? Math.min(100, (filled / total) * 100) : 0;
+  $('det-content').style.display = 'block';
+  $('det-title').textContent = t.title || 'Tournament';
+  $('det-badge').textContent = st.label;
+  $('det-badge').className = 'badge ' + st.cls;
+  $('det-date').textContent = t.matchDate || '-';
+  $('det-time').textContent = fmt12h(t.matchTime);
+  $('det-map').textContent = t.map || '-';
+  $('det-fee').textContent = t.entryFee || '-';
+  $('det-prize').textContent = t.prizePool || '-';
+  $('det-slots-text').textContent = 'Slots: ' + filled + ' / ' + total;
+  $('det-left-text').textContent = 'বাকি: ' + left;
+  $('det-slot-fill').style.width = pct + '%';
+  if (t.details) {
+    $('det-details-text').textContent = t.details;
+    $('det-details-card').style.display = 'block';
+  } else {
+    $('det-details-text').textContent = '';
+    $('det-details-card').style.display = 'none';
+  }
+  $('det-slot-counts').textContent = 'মোট Slot: ' + total + ' • পূর্ণ: ' + filled + ' • বাকি: ' + left;
+  const already = state.user && state.myRegs.some(r => r.tournamentId === t.id);
+  // v3.4 — আগেই registered থাকলেও বোতাম disabled (14a)।
+  $('det-register-btn').disabled = st.label !== 'OPEN' || already;
+  $('det-register-btn').textContent = already ? 'তুমি আগেই Registered' : (st.label === 'OPEN' ? 'Register করো' : (st.label === 'FULL' ? 'Slot Full' : 'Registration বন্ধ'));
+}
+// Public slot list — tournamentSlots collection থেকে (কোনো UID নেই, শুধু teamName + slotLabel)
+async function loadPublicSlots(tid) {
+  const listEl = $('det-slot-list');
+  const emptyEl = $('det-slot-empty');
+  $('det-slot-loading').style.display = 'block';
+  listEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+  let slots = [];
+  try {
+    // প্রথমে orderBy সহ চেষ্টা, index না থাকলে where-only + client sort-এ পড়ে যাবে
+    try {
+      const snap = await getDocs(query(collection(db, 'tournamentSlots'), where('tournamentId', '==', tid), orderBy('slotNumber')));
+      slots = snap.docs.map(d => d.data());
+    } catch (inner) {
+      const snap = await getDocs(query(collection(db, 'tournamentSlots'), where('tournamentId', '==', tid)));
+      slots = snap.docs.map(d => d.data()).sort((a, b) => (a.slotNumber || 0) - (b.slotNumber || 0));
+    }
+  } catch (e) {
+    $('det-slot-loading').style.display = 'none';
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'Slot list load হয়নি: ' + friendlyError(e);
+    return;
+  }
+  $('det-slot-loading').style.display = 'none';
+  if (!slots.length) {
+    // পুরনো tournament-এ slot doc নাও থাকতে পারে — tournament doc-এর count দেখাও
+    const t = tourById(tid);
+    const filled = t ? (t.filledSlots || 0) : 0;
+    const total = t ? (t.totalSlots || 0) : 0;
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'এখনো কোনো team-এর slot দেখানো হয়নি। মোট Slot: ' + total + ' • পূর্ণ: ' + filled + '।';
+    return;
+  }
+  listEl.innerHTML = slots.map(s => (
+    '<div class="row-item"><span class="slot-chip">' + esc(s.slotLabel || slotLabel(s.slotNumber)) + '</span>'
+    + '<div class="row-main"><div class="row-title">' + esc(s.teamName || 'Team') + '</div></div></div>'
+  )).join('');
+}
+$('det-register-btn').addEventListener('click', () => {
+  if (!state.currentTid) return;
+  openRegister(state.currentTid);
+});
+
+// ── Registration ──
+function renderRegisterPrompt() {
+  const needLogin = !state.user;
+  $('reg-login-prompt').style.display = needLogin ? 'block' : 'none';
+  $('reg-form-wrap').style.display = needLogin ? 'none' : 'block';
+}
+function openRegister(tid) {
+  state.currentTid = tid;
+  const t = tourById(tid);
+  $('reg-form-title').textContent = 'Registration — SQUAD';
+  $('reg-tour-line').textContent = t ? (t.title || 'Tournament') + ' • ' + (t.matchDate || '') + ' ' + fmt12h(t.matchTime) + ' • Entry: ' + (t.entryFee || '-') : '';
+  hideAlert('reg-alert');
+  // v3.3 — profile-এ IGN/UID থাকলে form-এ বসিয়ে দাও (user চাইলে বদলাতে পারবে)।
+  const p = state.profile || {};
+  if (p.ign) $('reg-ign').value = p.ign;
+  if (p.ffUid) $('reg-uid').value = p.ffUid;
+  showView('register');
+}
+
+// ── Slot reuse ──
+// খালি slot খোঁজা — সবচেয়ে ছোট ফাঁকা slot number (1..total)।
+// tournamentSlots-ই taken slot-এর উৎস (খালি slot-এর doc থাকে না)।
+// Admin manual-add-এ একই নিয়ম, একই txn-এর ভেতরে পড়ে। 0 মানে খালি slot নেই।
+async function pickFreeSlot(tx, tid, total) {
+  const slotsSnap = await tx.get(query(collection(db, 'tournamentSlots'), where('tournamentId', '==', tid)));
+  const taken = new Set();
+  slotsSnap.forEach(d => { const n = d.data().slotNumber; if (typeof n === 'number') taken.add(n); });
+  for (let n = 1; n <= total; n++) if (!taken.has(n)) return n;
+  return 0;
+}
+$('reg-btn').addEventListener('click', async () => {
+  if (!state.user) { showView('auth'); return; }
+  const tid = state.currentTid;
+  if (!tid) return showAlert('reg-alert', 'Tournament বেছে নাও।', 'error');
+  const teamName = $('reg-team').value.trim();
+  const captainIgn = $('reg-ign').value.trim();
+  const captainUid = $('reg-uid').value.trim();
+  hideAlert('reg-alert');
+  if (teamName.length < 2) return showAlert('reg-alert', 'Team Name কমপক্ষে ২ অক্ষর হবে।', 'error');
+  if (!captainIgn) return showAlert('reg-alert', 'Captain IGN লেখো।', 'error');
+  if (!/^\d{5,15}$/.test(captainUid)) return showAlert('reg-alert', 'Captain UID শুধু সংখ্যা হবে (৫-১৫ digit)।', 'error');
+
+  const btn = $('reg-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Registering';
+  try {
+    const res = await runTransaction(db, async (tx) => {
+      const tourRef = doc(db, 'tournaments', tid);
+      const tourSnap = await tx.get(tourRef);
+      if (!tourSnap.exists()) throw new Error('NO_TOURNAMENT');
+      const td = tourSnap.data();
+      if (td.tournamentStatus !== 'active') throw new Error('CLOSED');
+      if (td.registrationStatus === 'closed') throw new Error('CLOSED');
+      const filled = td.filledSlots || 0;
+      const total = td.totalSlots || 0;
+      // v3.4 — আগে খালি slot খোঁজো (9a): filled counter ভুল থাকলেও আসল slot হিসাব ঠিক থাকে।
+      const next = await pickFreeSlot(tx, tid, total);
+      if (!next) throw new Error('FULL');
+      // v3.4 — slot খালি আছে অথচ counter পূর্ণ বলছে: হিসাব মিলছে না, register হতে দিও না (9a)।
+      if (filled >= total) throw new Error('COUNTER_MISMATCH');
+      const regId = tid + '_' + state.user.uid;
+      const regRef = doc(db, 'registrations', regId);
+      const regSnap = await tx.get(regRef);
+      // v3.4 — আগেই registered আর UID নেওয়া — দুটো আলাদা error (11)।
+      if (regSnap.exists()) throw new Error('ALREADY_REGISTERED');
+      const lockRef = doc(db, 'tournaments', tid, 'uidLocks', captainUid);
+      const lockSnap = await tx.get(lockRef);
+      if (lockSnap.exists()) throw new Error('UID_TAKEN');
+      const slot = slotLabel(next);
+      const captain = { name: captainIgn, ign: captainIgn, uid: captainUid };
+      tx.set(regRef, {
+        registrationId: regId,
+        tournamentId: tid,
+        userId: state.user.uid,
+        gameMode: 'SQUAD',
+        teamName: teamName,
+        captainUid: captainUid, // v3.4 — Rules-এ captainUid বাধ্যতামূলক, না লিখলে permission-denied হতো (BLOCKER, 1)।
+        captain: captain,
+        players: [captain],
+        playerUIDs: [captainUid],
+        slotNumber: next,
+        slotLabel: slot,
+        registrationStatus: 'confirmed',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      tx.set(lockRef, { ffUid: captainUid, registrationId: regId, userId: state.user.uid, createdAt: serverTimestamp() });
+      tx.set(doc(db, 'tournamentSlots', tid + '_' + next), { tournamentId: tid, slotNumber: next, slotLabel: slot, teamName: teamName });
+      // nextSlot high-water mark — বাড়ে শুধু নতুন slot আগের সর্বোচ্চের উপরে গেলে।
+      tx.update(tourRef, { nextSlot: Math.max(td.nextSlot || 0, next), filledSlots: filled + 1, updatedAt: serverTimestamp() });
+      return { slot: slot, slotNumber: next, regId: regId };
+    });
+    $('success-team-line').textContent = teamName + ' • SQUAD';
+    $('success-slot').textContent = res.slot;
+    $('success-meta').textContent = tourTitle(tid);
+    $('success-reg-id').textContent = res.regId;
+    // v3.3 — success-এর পর form খালি করো, যাতে Back করলে আগের data না থাকে।
+    $('reg-team').value = '';
+    $('reg-ign').value = '';
+    $('reg-uid').value = '';
+    showView('success');
+    toast('Registration সফল');
+  } catch (e) {
+    const m = e && e.message ? e.message : '';
+    // v3.4 — ALREADY ভেঙে দুটো করা হয়েছে (11), COUNTER_MISMATCH নতুন (9a)।
+    const msg = m === 'ALREADY_REGISTERED' ? 'তুমি এই tournament-এ আগেই registered।'
+      : m === 'UID_TAKEN' ? 'এই UID দিয়ে আগেই register করা আছে।'
+      : m === 'COUNTER_MISMATCH' ? 'Slot খালি আছে কিন্তু হিসাব মিলছে না — admin-কে জানাও।'
+      : m === 'FULL' ? 'সব Slot পূর্ণ হয়ে গেছে।'
+      : m === 'CLOSED' ? 'Registration এখন বন্ধ আছে।'
+      : m === 'NO_TOURNAMENT' ? 'Tournament পাওয়া যায়নি।'
+      : 'Register হয়নি: ' + friendlyError(e);
+    showAlert('reg-alert', msg, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Register করো';
+  }
+});
+$('success-my-btn').addEventListener('click', () => showView('myregs'));
+$('success-tour-btn').addEventListener('click', () => showView('tournaments'));
+
+// ── My Registrations ──
+function renderMyRegs() {
+  const needLogin = !state.user;
+  $('my-login-prompt').style.display = needLogin ? 'block' : 'none';
+  $('my-empty').style.display = 'none';
+  if (needLogin) {
+    $('my-loading').style.display = 'none';
+    $('my-list').innerHTML = '';
+    return;
+  }
+  $('my-loading').style.display = state.myLoading ? 'block' : 'none';
+  hideAlert('my-error');
+  const list = state.myRegs;
+  $('my-list').innerHTML = list.map(r => {
+    const cap = r.captain || {};
+    const capIgn = cap.ign || cap.name || '-';
+    const capUid = cap.uid || (r.playerUIDs && r.playerUIDs[0]) || '-';
+    // v3.3 — match-এর date/time-ও দেখাও; tournament list-এ না থাকলে date দেখাবে না (crash করবে না)।
+    const t = tourById(r.tournamentId);
+    const when = t && t.matchDate ? esc(t.matchDate) + (t.matchTime ? ' • ' + esc(fmt12h(t.matchTime)) : '') : '';
+    return '<div class="row-item"><span class="slot-chip">' + esc(r.slotLabel || slotLabel(r.slotNumber)) + '</span>'
+      + '<div class="row-main"><div class="row-title">' + esc(tourTitle(r.tournamentId)) + '</div>'
+      + '<div class="row-sub">Team: ' + esc(r.teamName || '-') + '<br>Captain: ' + esc(capIgn) + ' • UID: ' + esc(capUid)
+      + (when ? '<br>Match: ' + when : '')
+      + '<br>Status: ' + esc(r.registrationStatus || 'confirmed') + '</div></div></div>';
+  }).join('');
+  $('my-empty').style.display = (!state.myLoading && list.length === 0) ? 'block' : 'none';
+}
+function subscribeMyRegs() {
+  if (unsubMyRegs) { unsubMyRegs(); unsubMyRegs = null; }
+  state.myRegs = [];
+  state.myLoading = !state.user ? false : true;
+  if (!state.user) { renderMyRegs(); renderRoomList(); return; }
+  const q = query(collection(db, 'registrations'), where('userId', '==', state.user.uid), orderBy('createdAt', 'desc'));
+  unsubMyRegs = onSnapshot(q, snap => {
+    state.myRegs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    state.myLoading = false;
+    hideAlert('my-error');
+    if (state.view === 'myregs') renderMyRegs();
+    if (state.view === 'room') renderRoomList();
+    if (state.view === 'details' && state.currentTid) renderDetailsFields();
+  }, e => {
+    state.myLoading = false;
+    showAlert('my-error', 'My Registrations load হয়নি: ' + friendlyError(e), 'error');
+    if (state.view === 'myregs') renderMyRegs();
+  });
+}
+
+// ── Room ──
+function renderRoomList() {
+  const needLogin = !state.user;
+  $('room-login-prompt').style.display = needLogin ? 'block' : 'none';
+  $('room-empty').style.display = 'none';
+  if (needLogin) {
+    $('room-loading').style.display = 'none';
+    $('room-list').innerHTML = '';
+    return;
+  }
+  $('room-loading').style.display = state.myLoading ? 'block' : 'none';
+  hideAlert('room-error');
+  // v3.4 — নিজের registration + admin-এর manual-add (একই FF UID) — দুটোতেই Room দেখা যাবে (2c)।
+  const myIds = new Set(state.myRegs.map(r => r.tournamentId));
+  const list = state.myRegs.concat((state.manualRegs || []).filter(r => !myIds.has(r.tournamentId)));
+  $('room-list').innerHTML = list.map(r => (
+    '<div class="row-item tap" data-tid="' + esc(r.tournamentId) + '"><span class="slot-chip">' + esc(r.slotLabel || slotLabel(r.slotNumber)) + '</span>'
+    + '<div class="row-main"><div class="row-title">' + esc(tourTitle(r.tournamentId)) + '</div>'
+    + '<div class="row-sub">Team: ' + esc(r.teamName || '-') + ' • Room দেখতে tap করো</div></div>'
+    + '<div class="row-meta">›</div></div>'
+  )).join('');
+  $('room-empty').style.display = (!state.myLoading && list.length === 0) ? 'block' : 'none';
+  // v3.4 — manual registration খুঁজে আনো (profile-এ FF UID থাকলে)।
+  loadManualRoomRegs();
+}
+// v3.4 — Room view-এর জন্য manual registration খোঁজা (2c): profile-এর FF UID দিয়ে
+// {tid}_manual_{ffUid} doc পড়ে; এক user + এক FF UID-এর জন্য একবারই fetch হয়।
+let manualRoomState = { key: '', loading: false };
+async function loadManualRoomRegs() {
+  if (!state.user || !state.profile || !state.profile.ffUid) { state.manualRegs = []; return; }
+  const key = state.user.uid + '|' + state.profile.ffUid;
+  if (manualRoomState.loading || manualRoomState.key === key) return;
+  manualRoomState.loading = true;
+  try {
+    const regs = [];
+    for (const t of state.tournaments) {
+      if (state.myRegs.some(r => r.tournamentId === t.id)) continue;
+      try {
+        const snap = await getDoc(doc(db, 'registrations', t.id + '_manual_' + state.profile.ffUid));
+        if (snap.exists()) regs.push({ id: snap.id, ...snap.data() });
+      } catch (e) { /* একটা doc পড়তে না পারলে বাকিগুলো খোঁজা থামবে না */ }
+    }
+    state.manualRegs = regs;
+    manualRoomState.key = key;
+    if (state.view === 'room') renderRoomList();
+  } finally {
+    manualRoomState.loading = false;
+  }
+}
+$('room-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-tid]');
+  if (!row) return;
+  openRoom(row.dataset.tid);
+});
+async function openRoom(tid) {
+  state.roomTid = tid;
+  $('roomd-title').style.display = 'block';
+  $('roomd-title').textContent = tourTitle(tid);
+  $('roomd-loading').style.display = 'block';
+  $('roomd-result').innerHTML = '';
+  // v3.4 — আগের room-এর registration watch বন্ধ করো (14h)।
+  if (unsubRoomReg) { unsubRoomReg(); unsubRoomReg = null; }
+  showView('roomdetails');
+  let mine = state.myRegs.find(r => r.tournamentId === tid);
+  // v3.4 — নিজের registration না থাকলে manual-add খোঁজো: profile-এর FF UID দিয়ে {tid}_manual_{ffUid} (2b)।
+  if (!mine && state.profile && state.profile.ffUid) {
+    try {
+      const msnap = await getDoc(doc(db, 'registrations', tid + '_manual_' + state.profile.ffUid));
+      if (msnap.exists()) mine = { id: msnap.id, ...msnap.data() };
+    } catch (e) { /* পড়তে না পারলে registered না ধরেই এগোও */ }
+  }
+  if (!mine) {
+    $('roomd-loading').style.display = 'none';
+    $('roomd-result').innerHTML = '<div class="alert alert-error show">তুমি এই tournament-এ registered না।</div>';
+    return;
+  }
+  // v3.4 — registration-এর উপর live watch (14h): admin kick করলে Room সাথে সাথে লুকাবে।
+  unsubRoomReg = onSnapshot(doc(db, 'registrations', mine.id), snap => {
+    if (!snap.exists() && state.view === 'roomdetails' && state.roomTid === tid) {
+      $('roomd-loading').style.display = 'none';
+      $('roomd-result').innerHTML = '<div class="alert alert-error show">তুমি আর registered না — admin team-টা remove করেছে, তাই Room আর দেখা যাবে না।</div>';
+    }
+  }, () => { /* watch বন্ধ হলে কিছু করার নেই — Room fetch-এর error-ই দেখাবে */ });
+  try {
+    const snap = await getDoc(doc(db, 'roomCredentials', tid));
+    $('roomd-loading').style.display = 'none';
+    if (snap.exists() && snap.data().released === true && snap.data().roomId) {
+      const d = snap.data();
+      $('roomd-result').innerHTML =
+        '<div class="card" style="border-color:var(--lime); text-align:center;">'
+        + '<div class="card-title lime" style="justify-content:center;">Room Ready</div>'
+        + '<p class="fine-print" style="margin-bottom:6px;">তোমার Slot: <strong style="color:var(--lime);">' + esc(mine.slotLabel || slotLabel(mine.slotNumber)) + '</strong>'
+        + ' • ' + esc(mine.teamName || '') + '</p>'
+        + '<div class="room-box">'
+        + '<div class="room-field"><div class="room-field-label">Room ID</div>'
+        + '<div class="room-field-value">' + esc(d.roomId) + '</div>'
+        + '<button class="copy-btn" data-copy="' + esc(d.roomId) + '">Copy</button></div>'
+        + '<div class="divider"></div>'
+        + '<div class="room-field"><div class="room-field-label">Password</div>'
+        + '<div class="room-field-value">' + esc(d.roomPassword || '') + '</div>'
+        // v3.4 — password খালি থাকলে Copy বোতাম disabled (14g)।
+        + '<button class="copy-btn" data-copy="' + esc(d.roomPassword || '') + '"' + (d.roomPassword ? '' : ' disabled') + '>Copy</button></div>'
+        + '</div>'
+        + '<p class="fine-print" style="margin-top:14px;">এই Room ID / Password কাউকে share করো না।</p></div>';
+    } else {
+      $('roomd-result').innerHTML = '<div class="alert alert-info show">Room এখনো release হয়নি।</div>';
+    }
+  } catch (e) {
+    $('roomd-loading').style.display = 'none';
+    // permission-denied মানেও room এখনো release হয়নি — আসল error দেখিয়ে leak করা যাবে না
+    if (e && (e.code === 'permission-denied' || /permission-denied/i.test(e.message || ''))) {
+      $('roomd-result').innerHTML = '<div class="alert alert-info show">Room এখনো release হয়নি।</div>';
+    } else {
+      $('roomd-result').innerHTML = '<div class="alert alert-error show">' + esc(friendlyError(e)) + '</div>';
+    }
+  }
+}
+
+// ── Auth ──
+function showLoginBox() {
+  $('auth-login-box').style.display = 'block';
+  $('auth-register-box').style.display = 'none';
+}
+function showRegisterBox() {
+  $('auth-login-box').style.display = 'none';
+  $('auth-register-box').style.display = 'block';
+}
+$('to-register-btn').addEventListener('click', showRegisterBox);
+$('to-login-btn').addEventListener('click', showLoginBox);
+$('login-btn').addEventListener('click', async () => {
+  const email = $('login-email').value.trim();
+  const pass = $('login-pass').value;
+  hideAlert('login-alert');
+  if (!email || !pass) return showAlert('login-alert', 'Email আর password দুটোই দাও।', 'error');
+  const btn = $('login-btn');
+  btn.disabled = true;
+  btn.textContent = 'Login হচ্ছে';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    toast('Login সফল');
+    showView('tournaments');
+  } catch (e) {
+    showAlert('login-alert', friendlyError(e), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Login';
+  }
+});
+$('register-btn').addEventListener('click', async () => {
+  const name = $('auth-reg-name').value.trim();
+  const ign = $('auth-reg-ign').value.trim();
+  const ffUid = $('auth-reg-ffuid').value.trim();
+  const email = $('auth-reg-email').value.trim();
+  const pass = $('auth-reg-pass').value;
+  hideAlert('register-alert');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showAlert('register-alert', 'সঠিক email লেখো।', 'error');
+  if (!pass || pass.length < 6) return showAlert('register-alert', 'Password কমপক্ষে ৬ অক্ষর হবে।', 'error');
+  if (ffUid && !/^\d{5,15}$/.test(ffUid)) return showAlert('register-alert', 'FF UID শুধু সংখ্যা হবে (৫-১৫ digit)।', 'error');
+  const btn = $('register-btn');
+  btn.disabled = true;
+  btn.textContent = 'Account তৈরি হচ্ছে';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    try {
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        displayName: name || '',
+        ign: ign || '',
+        ffUid: ffUid || '',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      // v3.4 — profile সাথে সাথে state-এ বসাও, যাতে register form pre-fill এখনই কাজ করে (14c)।
+      state.profile = { displayName: name || '', ign: ign || '', ffUid: ffUid || '' };
+      updateAvatar();
+    } catch (profileErr) {
+      // v3.4 — profile save না হলে success দেখিও না: user auth পেজেই থাকবে, Profile থেকে আবার save করবে (5)।
+      showAlert('register-alert', 'Account তৈরি হয়েছে, কিন্তু profile save হয়নি: ' + friendlyError(profileErr) + ' Profile-এ গিয়ে নাম, IGN আর FF UID আবার save করো।', 'error');
+      return;
+    }
+    toast('Account তৈরি হয়েছে');
+    showView('tournaments');
+  } catch (e) {
+    showAlert('register-alert', friendlyError(e), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Account বানাও';
+  }
+});
+
+// ── Avatar ──
+// v3.3 — avatar-এ নামের প্রথম অক্ষর: displayName, না থাকলে IGN, না থাকলে email; login না থাকলে "T"।
+function updateAvatar() {
+  const btn = $('btn-profile');
+  if (!btn) return;
+  const p = state.profile || {};
+  const src = state.user ? ((p.displayName || '').trim() || (p.ign || '').trim() || (state.user.email || '').trim()) : '';
+  // v3.4 — Array.from-এ প্রথম অক্ষর, যাতে emoji প্রথমে থাকলেও ভাঙে না (14d)।
+  btn.textContent = src ? Array.from(src)[0].toUpperCase() : 'T';
+}
+
+// ── Profile ──
+function renderProfile() {
+  // v3.4 — Profile খুললেই আগের alert মুছো (14d)।
+  hideAlert('profile-alert');
+  updateAvatar();
+  const needLogin = !state.user;
+  $('profile-login-prompt').style.display = needLogin ? 'block' : 'none';
+  $('profile-content').style.display = needLogin ? 'none' : 'block';
+  if (needLogin) return;
+  $('profile-email-text').textContent = state.user.email || '';
+  const p = state.profile || {};
+  if (document.activeElement !== $('profile-name')) $('profile-name').value = p.displayName || '';
+  if (document.activeElement !== $('profile-ign')) $('profile-ign').value = p.ign || '';
+  if (document.activeElement !== $('profile-ffuid')) $('profile-ffuid').value = p.ffUid || '';
+}
+async function loadProfile() {
+  if (!state.user) { state.profile = null; renderProfile(); return; }
+  const oldFfUid = state.profile ? state.profile.ffUid : null;
+  try {
+    const snap = await getDoc(doc(db, 'users', state.user.uid));
+    state.profile = snap.exists() ? snap.data() : {};
+  } catch (e) {
+    state.profile = {};
+    showAlert('profile-alert', 'Profile load হয়নি: ' + friendlyError(e), 'error');
+  }
+  // v3.4 — FF UID বদলালে manual Room-এর খোঁজ আবার করতে হবে (2c)।
+  if ((state.profile.ffUid || '') !== (oldFfUid || '')) manualRoomState.key = '';
+  updateAvatar();
+  if (state.view === 'profile') renderProfile();
+  if (state.view === 'room') renderRoomList();
+}
+$('profile-save-btn').addEventListener('click', async () => {
+  if (!state.user) return;
+  const name = $('profile-name').value.trim();
+  const ign = $('profile-ign').value.trim();
+  const ffUid = $('profile-ffuid').value.trim();
+  hideAlert('profile-alert');
+  if (ffUid && !/^\d{5,15}$/.test(ffUid)) return showAlert('profile-alert', 'FF UID শুধু সংখ্যা হবে (৫-১৫ digit)।', 'error');
+  const btn = $('profile-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Save হচ্ছে';
+  try {
+    await setDoc(doc(db, 'users', state.user.uid), {
+      displayName: name,
+      ign: ign,
+      ffUid: ffUid,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    state.profile = { displayName: name, ign: ign, ffUid: ffUid };
+    updateAvatar();
+    showAlert('profile-alert', 'Profile save হয়েছে।', 'success');
+    toast('Profile save হয়েছে');
+  } catch (e) {
+    showAlert('profile-alert', 'Profile save হয়নি: ' + friendlyError(e), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Profile Save করো';
+  }
+});
+$('profile-logout-btn').addEventListener('click', async () => {
+  try {
+    await signOut(auth);
+    toast('Logout হয়েছে');
+    showView('tournaments');
+  } catch (e) {
+    showAlert('profile-alert', 'Logout হয়নি: ' + friendlyError(e), 'error');
+  }
+});
+
+// ── Auth state ──
+onAuthStateChanged(auth, (user) => {
+  state.user = user;
+  updateAvatar();
+  if (user) {
+    loadProfile();
+    subscribeMyRegs();
+  } else {
+    state.profile = null;
+    state.manualRegs = [];
+    // v3.4 — logout-এ manual Room-এর খোঁজ reset করো (2c)।
+    manualRoomState.key = '';
+    subscribeMyRegs();
+    if (state.view === 'profile') renderProfile();
+    if (state.view === 'myregs') renderMyRegs();
+    if (state.view === 'room') renderRoomList();
+    if (state.view === 'register') renderRegisterPrompt();
+  }
+});
+
+// ── Init ──
+subscribeTournaments();
+showView('tournaments');
+</script>
+</body>
+</html>
