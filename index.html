@@ -456,7 +456,8 @@ const state = {
 };
 let unsubTournaments = null;
 let unsubMyRegs = null;
-let unsubRoomReg = null; // v3.4 — Room দেখার সময় নিজের registration-এর live watch (14h)।
+let unsubRoomReg  = null; // v3.4 — Room দেখার সময় নিজের registration-এর live watch।
+let unsubRoomCred = null; // v3.6 — roomCredentials-এর real-time watch (admin release করলে সাথে সাথে দেখাবে)।
 
 // ── Helpers ──
 function esc(s) {
@@ -512,8 +513,9 @@ function statusOf(t) {
 // ── Navigation ──
 const VIEW_IDS = { tournaments: 'view-tournaments', details: 'view-details', register: 'view-register', success: 'view-success', myregs: 'view-myregs', room: 'view-room', roomdetails: 'view-room-details', auth: 'view-auth', profile: 'view-profile' };
 function showView(name) {
-  // v3.4 — room-details ছেড়ে গেলে registration watch বন্ধ করো (14h)।
-  if (name !== 'roomdetails' && unsubRoomReg) { unsubRoomReg(); unsubRoomReg = null; }
+  // v3.6 — room-details ছেড়ে গেলে registration watch + roomCredentials watch দুটোই বন্ধ করো।
+  if (name !== 'roomdetails' && unsubRoomReg)  { unsubRoomReg();  unsubRoomReg  = null; }
+  if (name !== 'roomdetails' && unsubRoomCred) { unsubRoomCred(); unsubRoomCred = null; }
   state.view = name;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = $(VIEW_IDS[name]);
@@ -815,9 +817,13 @@ $('reg-btn').addEventListener('click', async () => {
         updatedAt: serverTimestamp()
       });
       tx.set(lockRef, { ffUid: captainUid, registrationId: regId, userId: state.user.uid, createdAt: serverTimestamp() });
-      tx.set(doc(db, 'tournamentSlots', tid + '_' + next), { tournamentId: tid, slotNumber: next, slotLabel: slot, teamName: teamName });
+      // v3.7 FIX: slot doc-এর ID slotLabel দিয়ে (tid_S-01) — rules-এ string + int
+      // জোড়া যায় না, তাই tid + '_' + next (number) দিয়ে rules-এ type error হতো।
+      tx.set(doc(db, 'tournamentSlots', tid + '_' + slot), { tournamentId: tid, slotNumber: next, slotLabel: slot, teamName: teamName });
       // nextSlot high-water mark — বাড়ে শুধু নতুন slot আগের সর্বোচ্চের উপরে গেলে।
-      tx.update(tourRef, { nextSlot: Math.max(td.nextSlot || 0, next), filledSlots: filled + 1, updatedAt: serverTimestamp() });
+      // v3.6 FIX: typeof check দিয়ে missing nextSlot field safe করা হয়েছে।
+      const currentNextSlot = typeof td.nextSlot === 'number' ? td.nextSlot : 0;
+      tx.update(tourRef, { nextSlot: Math.max(currentNextSlot, next), filledSlots: filled + 1, updatedAt: serverTimestamp() });
       return { slot: slot, slotNumber: next, regId: regId };
     });
     $('success-team-line').textContent = teamName + ' • SQUAD';
@@ -844,7 +850,7 @@ $('reg-btn').addEventListener('click', async () => {
     // slot doc-টা এখন আছে কিনা দেখে বুঝিয়ে দাও — Rules-এর message দেখিও না।
     if (e && e.code === 'permission-denied' && attemptedSlot > 0) {
       try {
-        const slotSnap = await getDoc(doc(db, 'tournamentSlots', tid + '_' + attemptedSlot));
+        const slotSnap = await getDoc(doc(db, 'tournamentSlots', tid + '_' + slotLabel(attemptedSlot)));
         if (slotSnap.exists()) msg = 'এই slot-টা এইমাত্র অন্য কেউ নিয়ে নিয়েছে — আবার Register চাপো।';
       } catch (_) { /* check না হলে আগের message-ই থাকবে */ }
     }
@@ -981,15 +987,19 @@ async function openRoom(tid) {
     $('roomd-result').innerHTML = '<div class="alert alert-error show">তুমি এই tournament-এ registered না।</div>';
     return;
   }
-  // v3.4 — registration-এর উপর live watch (14h): admin kick করলে Room সাথে সাথে লুকাবে।
+  // v3.4 — registration-এর উপর live watch: admin kick করলে Room সাথে সাথে লুকাবে।
   unsubRoomReg = onSnapshot(doc(db, 'registrations', mine.id), snap => {
     if (!snap.exists() && state.view === 'roomdetails' && state.roomTid === tid) {
+      // kick হয়ে গেছে — roomCredentials watch-ও বন্ধ করো
+      if (unsubRoomCred) { unsubRoomCred(); unsubRoomCred = null; }
       $('roomd-loading').style.display = 'none';
       $('roomd-result').innerHTML = '<div class="alert alert-error show">তুমি আর registered না — admin team-টা remove করেছে, তাই Room আর দেখা যাবে না।</div>';
     }
-  }, () => { /* watch বন্ধ হলে কিছু করার নেই — Room fetch-এর error-ই দেখাবে */ });
-  try {
-    const snap = await getDoc(doc(db, 'roomCredentials', tid));
+  }, () => { /* watch বন্ধ হলে কিছু করার নেই */ });
+
+  // v3.6 FIX — getDoc → onSnapshot: admin Room release/update/hide করলে player সাথে সাথে দেখবে।
+  // আগে getDoc ছিল, তাই page refresh না করলে নতুন Room ID/Password দেখা যেত না।
+  function renderRoomCredential(snap) {
     $('roomd-loading').style.display = 'none';
     if (snap.exists() && snap.data().released === true && snap.data().roomId) {
       const d = snap.data();
@@ -1005,22 +1015,31 @@ async function openRoom(tid) {
         + '<div class="divider"></div>'
         + '<div class="room-field"><div class="room-field-label">Password</div>'
         + '<div class="room-field-value">' + esc(d.roomPassword || '') + '</div>'
-        // v3.4 — password খালি থাকলে Copy বোতাম disabled (14g)।
         + '<button class="copy-btn" data-copy="' + esc(d.roomPassword || '') + '"' + (d.roomPassword ? '' : ' disabled') + '>Copy</button></div>'
         + '</div>'
         + '<p class="fine-print" style="margin-top:14px;">এই Room ID / Password কাউকে share করো না।</p></div>';
     } else {
       $('roomd-result').innerHTML = '<div class="alert alert-info show">Room এখনো release হয়নি।</div>';
     }
-  } catch (e) {
-    $('roomd-loading').style.display = 'none';
-    // permission-denied মানেও room এখনো release হয়নি — আসল error দেখিয়ে leak করা যাবে না
-    if (e && (e.code === 'permission-denied' || /permission-denied/i.test(e.message || ''))) {
-      $('roomd-result').innerHTML = '<div class="alert alert-info show">Room এখনো release হয়নি।</div>';
-    } else {
-      $('roomd-result').innerHTML = '<div class="alert alert-error show">' + esc(friendlyError(e)) + '</div>';
-    }
   }
+  if (unsubRoomCred) { unsubRoomCred(); unsubRoomCred = null; }
+  unsubRoomCred = onSnapshot(
+    doc(db, 'roomCredentials', tid),
+    snap => {
+      if (state.view !== 'roomdetails' || state.roomTid !== tid) return;
+      renderRoomCredential(snap);
+    },
+    e => {
+      if (state.view !== 'roomdetails' || state.roomTid !== tid) return;
+      $('roomd-loading').style.display = 'none';
+      // permission-denied মানেও room এখনো release হয়নি — আসল error দেখিয়ে leak করা যাবে না
+      if (e && (e.code === 'permission-denied' || /permission-denied/i.test(e.message || ''))) {
+        $('roomd-result').innerHTML = '<div class="alert alert-info show">Room এখনো release হয়নি।</div>';
+      } else {
+        $('roomd-result').innerHTML = '<div class="alert alert-error show">' + esc(friendlyError(e)) + '</div>';
+      }
+    }
+  );
 }
 
 // ── Auth ──
