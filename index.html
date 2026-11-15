@@ -480,6 +480,8 @@ function toast(msg) {
 }
 function friendlyError(e) {
   const c = e && e.code ? String(e.code) : '';
+  // v3.5 — SDK-র raw TypeError (যেমন tx.get()-এ query দেওয়া) user-কে কখনো দেখিও না।
+  if (/Cannot read properties/i.test((e && e.message) || '') || (e && e.name === 'TypeError')) return 'অজানা সমস্যা হয়েছে — আবার চেষ্টা করো, না হলে admin-কে জানাও।';
   if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found') return 'Email বা password ভুল।';
   if (c === 'auth/email-already-in-use') return 'এই email দিয়ে account আছে — Login দিয়ে ঢোকো।';
   if (c === 'auth/weak-password') return 'Password কমপক্ষে ৬ অক্ষর হবে।';
@@ -728,13 +730,17 @@ function openRegister(tid) {
 }
 
 // ── Slot reuse ──
-// খালি slot খোঁজা — সবচেয়ে ছোট ফাঁকা slot number (1..total)।
-// tournamentSlots-ই taken slot-এর উৎস (খালি slot-এর doc থাকে না)।
-// Admin manual-add-এ একই নিয়ম, একই txn-এর ভেতরে পড়ে। 0 মানে খালি slot নেই।
-async function pickFreeSlot(tx, tid, total) {
-  const slotsSnap = await tx.get(query(collection(db, 'tournamentSlots'), where('tournamentId', '==', tid)));
+// v3.5 — Web SDK-তে tx.get() শুধু DocumentReference নেয়, Query নেয় না —
+// তাই taken slot-এর list txn-এর বাইরে পড়ে নাও, আর খালি slot বাছাই শুধু
+// হিসাবের কাজ (pure function)। tournamentSlots-ই taken slot-এর উৎস
+// (খালি slot-এর doc থাকে না)। 0 মানে খালি slot নেই।
+async function loadTakenSlots(tid) {
+  const slotsSnap = await getDocs(query(collection(db, 'tournamentSlots'), where('tournamentId', '==', tid)));
   const taken = new Set();
   slotsSnap.forEach(d => { const n = d.data().slotNumber; if (typeof n === 'number') taken.add(n); });
+  return taken;
+}
+function pickFreeSlot(taken, total) {
   for (let n = 1; n <= total; n++) if (!taken.has(n)) return n;
   return 0;
 }
@@ -753,6 +759,18 @@ $('reg-btn').addEventListener('click', async () => {
   const btn = $('reg-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Registering';
+  // v3.5 — race-এ হেরে গেলে কোন slot-টা নেওয়া হয়েছিল, মনে রাখো (catch-এ দেখাবে)।
+  let attemptedSlot = 0;
+  // v3.5 — slot list txn-এর বাইরে পড়ো; load না হলে txn শুরুই করো না।
+  let taken;
+  try {
+    taken = await loadTakenSlots(tid);
+  } catch (loadErr) {
+    showAlert('reg-alert', 'Slot list load হয়নি: ' + friendlyError(loadErr), 'error');
+    btn.disabled = false;
+    btn.textContent = 'Register করো';
+    return;
+  }
   try {
     const res = await runTransaction(db, async (tx) => {
       const tourRef = doc(db, 'tournaments', tid);
@@ -764,7 +782,9 @@ $('reg-btn').addEventListener('click', async () => {
       const filled = td.filledSlots || 0;
       const total = td.totalSlots || 0;
       // v3.4 — আগে খালি slot খোঁজো (9a): filled counter ভুল থাকলেও আসল slot হিসাব ঠিক থাকে।
-      const next = await pickFreeSlot(tx, tid, total);
+      // v3.5 — taken Set txn-এর বাইরে থেকে আসে; এখানে শুধু বাছাই।
+      const next = pickFreeSlot(taken, total);
+      attemptedSlot = next;
       if (!next) throw new Error('FULL');
       // v3.4 — slot খালি আছে অথচ counter পূর্ণ বলছে: হিসাব মিলছে না, register হতে দিও না (9a)।
       if (filled >= total) throw new Error('COUNTER_MISMATCH');
@@ -813,13 +833,21 @@ $('reg-btn').addEventListener('click', async () => {
   } catch (e) {
     const m = e && e.message ? e.message : '';
     // v3.4 — ALREADY ভেঙে দুটো করা হয়েছে (11), COUNTER_MISMATCH নতুন (9a)।
-    const msg = m === 'ALREADY_REGISTERED' ? 'তুমি এই tournament-এ আগেই registered।'
+    let msg = m === 'ALREADY_REGISTERED' ? 'তুমি এই tournament-এ আগেই registered।'
       : m === 'UID_TAKEN' ? 'এই UID দিয়ে আগেই register করা আছে।'
       : m === 'COUNTER_MISMATCH' ? 'Slot খালি আছে কিন্তু হিসাব মিলছে না — admin-কে জানাও।'
       : m === 'FULL' ? 'সব Slot পূর্ণ হয়ে গেছে।'
       : m === 'CLOSED' ? 'Registration এখন বন্ধ আছে।'
       : m === 'NO_TOURNAMENT' ? 'Tournament পাওয়া যায়নি।'
       : 'Register হয়নি: ' + friendlyError(e);
+    // v3.5 — race: দুজন একই slot-এ চাপলে হেরে যাওয়া জনের txn permission-denied হয়।
+    // slot doc-টা এখন আছে কিনা দেখে বুঝিয়ে দাও — Rules-এর message দেখিও না।
+    if (e && e.code === 'permission-denied' && attemptedSlot > 0) {
+      try {
+        const slotSnap = await getDoc(doc(db, 'tournamentSlots', tid + '_' + attemptedSlot));
+        if (slotSnap.exists()) msg = 'এই slot-টা এইমাত্র অন্য কেউ নিয়ে নিয়েছে — আবার Register চাপো।';
+      } catch (_) { /* check না হলে আগের message-ই থাকবে */ }
+    }
     showAlert('reg-alert', msg, 'error');
   } finally {
     btn.disabled = false;
